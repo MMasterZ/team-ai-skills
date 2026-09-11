@@ -40,6 +40,22 @@ npm install @mmasterz/team-ai-skills --save-dev
 
 ไม่เห็นบรรทัดนี้ = ยังไม่ได้ลง
 
+> ⚠️ **ห้ามลงด้วย `github:` หรือ git URL**
+>
+> ```bash
+> npm install github:MMasterZ/team-ai-skills   # ❌ อย่าทำ
+> ```
+>
+> แบบนั้น npm จะเขียน **ชื่อ/URL** ลง `package.json` แทนเลข version
+>
+> ```json
+> "@mmasterz/team-ai-skills": "github:MMasterZ/team-ai-skills"   // ❌ npm update ไม่ทำงานตลอดกาล
+> "@mmasterz/team-ai-skills": "^1.2.0"                           // ✅ ถูกต้อง
+> ```
+>
+> ไม่มีเลข version = ไม่มีอะไรให้เทียบ = ค้างเวอร์ชันเดิมถาวร ต้องลงจาก registry เท่านั้น
+> ถ้าลงผิดไปแล้ว ดู [Troubleshooting](#troubleshooting)
+
 ### 4. ตั้งให้อัปเดตอัตโนมัติ (แนะนำ)
 
 npm **ไม่อัปเดตเอง** ถ้าไม่ตั้งอะไรเลย ทีมจะค้างอยู่เวอร์ชันเดิมจนกว่าจะมีคนสั่ง `npm update` เอง
@@ -159,6 +175,52 @@ npm pack --dry-run
 ```
 
 ต้องเห็น `rules/`, `.claude/skills/`, `.claude/settings.json` และต้อง **ไม่เห็น `.npmrc`**
+
+---
+
+## Troubleshooting
+
+### `package.json` ขึ้นเป็นชื่อ/URL ไม่ใช่เลข version
+
+อาการ — `npm update` รันแล้วไม่มีอะไรเกิดขึ้น ค้างเวอร์ชันเดิมตลอด
+
+```json
+"@mmasterz/team-ai-skills": "github:MMasterZ/team-ai-skills"
+```
+
+สาเหตุคือลงมาจาก git ไม่ใช่จาก registry แก้โดยลงใหม่
+
+```bash
+npm uninstall @mmasterz/team-ai-skills
+npm install @mmasterz/team-ai-skills --save-dev
+```
+
+pnpm ใช้
+
+```bash
+pnpm remove @mmasterz/team-ai-skills
+pnpm add -D @mmasterz/team-ai-skills
+```
+
+เสร็จแล้วเปิด `package.json` เช็คว่าได้ `"^1.2.0"` แล้วจริง
+
+> ถ้า `npm install` เจ๊ง 401 หรือ 404 แปลว่ายังไม่ได้ตั้ง token — กลับไปทำ [ขั้นตอนที่ 2](#2-ใส่-token-ไว้ที่-user-level-ไม่ใช่ในโปรเจกต์) ก่อน
+> อย่าแก้ปัญหาด้วยการกลับไปใช้ `github:` เพราะจะวนกลับมาที่ปัญหาเดิม
+
+### ลงแล้วแต่ไม่เห็นบรรทัด `✅`
+
+`postinstall` ไม่ได้รัน เช็ค 2 อย่าง
+
+- ตั้ง `--ignore-scripts` ไว้หรือเปล่า (`npm config get ignore-scripts`)
+- ใช้ `npm ci` หรือเปล่า — `npm ci` รัน postinstall แต่ลงตาม lock เป๊ะ ไม่ดึงเวอร์ชันใหม่
+
+### เห็น `1 hook(s)` แทนที่จะเป็น `2 hook(s)`
+
+ยังได้ของเก่าอยู่ ต้องได้ `1.2.0` ขึ้นไป
+
+```bash
+npm install @mmasterz/team-ai-skills@latest --save-dev
+```
 
 ---
 
