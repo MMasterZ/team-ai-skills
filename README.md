@@ -23,7 +23,7 @@ pnpm add -D "github:MMasterZ/team-ai-skills#semver:^1.2.0"
 ถ้าสำเร็จจะเห็นบรรทัดนี้ พร้อมบอกเวอร์ชันที่ได้ไป
 
 ```
-✅ @mmasterz/team-ai-skills@1.2.1 installed: .cursorrules, 1 skill file(s), 2 hook(s)
+✅ @mmasterz/team-ai-skills@1.3.0 installed: .cursorrules, 1 skill file(s), 2 hook(s), 1 plugin(s)
 ```
 
 ไม่เห็นบรรทัดนี้ = ยังไม่ได้ลง ดู [Troubleshooting](#troubleshooting)
@@ -138,7 +138,7 @@ hook ที่แพ็กเกจนี้ใส่จะติด tag `team-a
 |---|---|---|
 | `.cursorrules` | Cursor | `rules/team-guidelines.md` |
 | `.claude/skills/*/SKILL.md` | Claude Code | `.claude/skills/` ในแพ็กเกจ |
-| `.claude/settings.json` (เฉพาะส่วน `hooks`) | Claude Code | `.claude/settings.json` ในแพ็กเกจ |
+| `.claude/settings.json` — `hooks`, `extraKnownMarketplaces`, `enabledPlugins` | Claude Code | `.claude/settings.json` ในแพ็กเกจ |
 
 ### Hooks ที่แจกอยู่ตอนนี้
 
@@ -146,6 +146,24 @@ hook ที่แพ็กเกจนี้ใส่จะติด tag `team-a
 |---|---|---|
 | `team-ai-skills:caveman` | `UserPromptSubmit` | บังคับสไตล์ caveman ทุกคำถาม |
 | `team-ai-skills:autoupdate` | `SessionStart` | รัน `npm update` เบื้องหลังทุกครั้งที่เปิด session |
+
+### Plugins ที่แจกอยู่ตอนนี้
+
+| plugin | marketplace | คืออะไร |
+|---|---|---|
+| `mattpocock-skills` | `mattpocock` ([mattpocock/skills](https://github.com/mattpocock/skills)) | ชุด skill ของ Matt Pocock เน้น workflow จริง เช่น `grill-me`, TDD, triage (MIT) |
+
+installer ใส่ marketplace + เปิด plugin ให้อัตโนมัติ ตัว plugin โหลดเองตอนเปิด session
+
+> **เคารพคนที่ตั้งใจปิด** ถ้าในเครื่องใครตั้ง `"mattpocock-skills@mattpocock": false` ไว้ installer จะไม่ไปเปิดกลับให้ ค่านั้นอยู่ยังไงก็อยู่อย่างนั้น
+>
+> ไม่อยากได้ ตั้งค่านี้ใน `.claude/settings.json` ของตัวเอง
+>
+> ```json
+> "enabledPlugins": { "mattpocock-skills@mattpocock": false }
+> ```
+
+> ⚠️ plugin จากคนนอกรัน hook ในเครื่องได้ ตัวนี้เป็น MIT และคนใช้เยอะ แต่ไม่ใช่ของ Anthropic — ถ้าทีมรับความเสี่ยงนี้ไม่ได้ ให้เอา `extraKnownMarketplaces` กับ `enabledPlugins` ออกจาก `.claude/settings.json` ของแพ็กเกจ
 
 ### Skills ที่แจกอยู่ตอนนี้
 
@@ -160,6 +178,8 @@ hook ที่แพ็กเกจนี้ใส่จะติด tag `team-a
 **เพิ่ม/แก้ rules:** แก้ [`rules/team-guidelines.md`](rules/team-guidelines.md)
 
 **เพิ่ม skill ใหม่:** สร้างโฟลเดอร์ใน `.claude/skills/<ชื่อ>/SKILL.md` — installer ก๊อปทุกอย่างในนั้นให้เอง **ไม่ต้องแก้ `install-rules.js`**
+
+**เพิ่ม plugin ใหม่:** เพิ่มใน `extraKnownMarketplaces` + `enabledPlugins` ของ `.claude/settings.json` ในแพ็กเกจ หา shape ที่ถูกต้องได้ด้วยการติดตั้งในเครื่องตัวเองก่อน (`claude plugins marketplace add <owner>/<repo>` แล้ว `claude plugins install <plugin>@<marketplace>`) จากนั้นก๊อปจาก `~/.claude/settings.json` มาใส่
 
 **เพิ่ม hook ใหม่:** เพิ่มใน `.claude/settings.json` ของแพ็กเกจ และตั้ง `statusMessage` ขึ้นต้นด้วย `team-ai-skills:` เสมอ ไม่งั้นระบบ merge จะจำไม่ได้ว่าเป็นของเราแล้วจะเกิด hook ซ้ำทุกครั้งที่ install
 

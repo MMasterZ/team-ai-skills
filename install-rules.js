@@ -36,10 +36,10 @@ function copyDir(src, dest) {
   return count;
 }
 
-// ใส่ hooks ลง .claude/settings.json ของโปรเจกต์ปลายทาง
+// เอา settings ของแพ็กเกจไปรวมกับ .claude/settings.json ของโปรเจกต์ปลายทาง
 // สำคัญ: ต้อง merge ไม่ใช่เขียนทับ เพราะปลายทางอาจมี settings ของตัวเองอยู่แล้ว
-// และต้อง idempotent — รัน npm install กี่รอบ hook ก็ไม่ซ้ำ
-function mergeHooks(projectRoot, sourceHooks) {
+// และต้อง idempotent — รัน npm install กี่รอบก็ไม่ซ้ำ ไม่บวม
+function mergeSettings(projectRoot, own) {
   const settingsFile = path.join(projectRoot, '.claude', 'settings.json');
   let settings = {};
 
@@ -48,33 +48,57 @@ function mergeHooks(projectRoot, sourceHooks) {
       settings = JSON.parse(fs.readFileSync(settingsFile, 'utf8'));
     } catch (e) {
       // ไฟล์เดิมพัง อ่านไม่ออก — ข้ามไปเลย ดีกว่าเขียนทับจนของทีมหาย
-      console.warn('⚠️  .claude/settings.json อ่านไม่ออก ข้ามการติดตั้ง hooks');
-      return 0;
+      console.warn('⚠️  .claude/settings.json อ่านไม่ออก ข้ามการติดตั้ง settings');
+      return { hooks: 0, marketplaces: 0, plugins: 0 };
     }
   }
 
-  settings.hooks = settings.hooks || {};
-  let installed = 0;
+  const result = { hooks: 0, marketplaces: 0, plugins: 0 };
 
-  for (const event of Object.keys(sourceHooks)) {
-    const existing = Array.isArray(settings.hooks[event]) ? settings.hooks[event] : [];
+  // --- hooks ---
+  if (own.hooks) {
+    settings.hooks = settings.hooks || {};
+    for (const event of Object.keys(own.hooks)) {
+      const existing = Array.isArray(settings.hooks[event]) ? settings.hooks[event] : [];
 
-    // เอาของเดิมที่แพ็กเกจนี้เคยใส่ไว้ออกก่อน (ดูจาก statusMessage ที่ขึ้นต้นด้วย tag)
-    // hook ของผู้ใช้เองหรือของแพ็กเกจอื่นจะไม่ถูกแตะ
-    const kept = existing.filter(function (group) {
-      const hooks = Array.isArray(group.hooks) ? group.hooks : [];
-      return !hooks.some(function (h) {
-        return String(h.statusMessage || '').indexOf(TAG + ':') === 0;
+      // เอาของเดิมที่แพ็กเกจนี้เคยใส่ไว้ออกก่อน (ดูจาก statusMessage ที่ขึ้นต้นด้วย tag)
+      // hook ของผู้ใช้เองหรือของแพ็กเกจอื่นจะไม่ถูกแตะ
+      const kept = existing.filter(function (group) {
+        const hooks = Array.isArray(group.hooks) ? group.hooks : [];
+        return !hooks.some(function (h) {
+          return String(h.statusMessage || '').indexOf(TAG + ':') === 0;
+        });
       });
-    });
 
-    settings.hooks[event] = kept.concat(sourceHooks[event]);
-    installed += sourceHooks[event].length;
+      settings.hooks[event] = kept.concat(own.hooks[event]);
+      result.hooks += own.hooks[event].length;
+    }
+  }
+
+  // --- plugin marketplaces ---
+  if (own.extraKnownMarketplaces) {
+    settings.extraKnownMarketplaces = settings.extraKnownMarketplaces || {};
+    for (const name of Object.keys(own.extraKnownMarketplaces)) {
+      settings.extraKnownMarketplaces[name] = own.extraKnownMarketplaces[name];
+      result.marketplaces++;
+    }
+  }
+
+  // --- plugins ---
+  // ถ้าปลายทางเคยตั้งค่าไว้แล้ว ไม่ว่าจะ true หรือ false ให้เคารพของเดิม
+  // คนที่ตั้งใจปิด plugin ไว้ จะได้ไม่โดนเปิดกลับทุกครั้งที่ npm install
+  if (own.enabledPlugins) {
+    settings.enabledPlugins = settings.enabledPlugins || {};
+    for (const id of Object.keys(own.enabledPlugins)) {
+      if (Object.prototype.hasOwnProperty.call(settings.enabledPlugins, id)) continue;
+      settings.enabledPlugins[id] = own.enabledPlugins[id];
+      result.plugins++;
+    }
   }
 
   fs.mkdirSync(path.dirname(settingsFile), { recursive: true });
   fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2) + '\n');
-  return installed;
+  return result;
 }
 
 // เตือนถ้าโปรเจกต์ปลายทางยังไม่ได้ตั้ง auto-update
@@ -123,18 +147,22 @@ try {
       path.join(projectRoot, '.claude', 'skills')
     );
 
-    // 3) hooks — อ่านจาก settings.json ของแพ็กเกจแล้ว merge เข้าของปลายทาง
-    let hookCount = 0;
+    // 3) hooks / marketplaces / plugins — อ่านจาก settings.json ของแพ็กเกจแล้ว merge เข้าของปลายทาง
+    let merged = { hooks: 0, marketplaces: 0, plugins: 0 };
     const ownSettingsFile = path.join(__dirname, '.claude', 'settings.json');
     if (fs.existsSync(ownSettingsFile)) {
-      const ownSettings = JSON.parse(fs.readFileSync(ownSettingsFile, 'utf8'));
-      if (ownSettings.hooks) hookCount = mergeHooks(projectRoot, ownSettings.hooks);
+      merged = mergeSettings(projectRoot, JSON.parse(fs.readFileSync(ownSettingsFile, 'utf8')));
     }
 
     console.log(
       '✅ ' + pkg.name + '@' + pkg.version + ' installed: ' +
-      '.cursorrules, ' + skillCount + ' skill file(s), ' + hookCount + ' hook(s)'
+      '.cursorrules, ' + skillCount + ' skill file(s), ' +
+      merged.hooks + ' hook(s), ' + merged.plugins + ' plugin(s)'
     );
+
+    if (merged.plugins > 0) {
+      console.log('   ℹ️  plugin เพิ่งถูกเปิด ต้องเปิด Claude Code session ใหม่ถึงจะใช้ได้');
+    }
 
     warnIfNoAutoUpdate(projectRoot);
   }
