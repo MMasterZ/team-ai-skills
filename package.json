@@ -1,6 +1,6 @@
 {
   "name": "@mmasterz/team-ai-skills",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "AI coding rules and skills กลางของทีม แจกเข้าทุกโปรเจกต์อัตโนมัติผ่าน postinstall",
   "main": "install-rules.js",
   "files": [
