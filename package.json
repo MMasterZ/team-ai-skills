@@ -1,0 +1,15 @@
+{
+  "name": "@mmasterz/team-ai-skills",
+  "version": "1.0.0",
+  "main": "install-rules.js",
+  "scripts": {
+    "postinstall": "node install-rules.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MMasterZ/team-ai-skills.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  }
+}
