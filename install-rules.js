@@ -5,6 +5,10 @@ const path = require('path');
 // แพ็กเกจอื่นในอนาคตให้ใช้ tag ของตัวเอง จะได้ไม่ลบ hook ของกันและกัน
 const TAG = 'team-ai-skills';
 
+// อ่านชื่อกับเวอร์ชันจาก package.json เพื่อเอาไปโชว์ตอนติดตั้งเสร็จ
+// ทีมจะได้เห็นว่าเครื่องตัวเองได้ rules เวอร์ชันไหนไปแล้ว
+const pkg = require('./package.json');
+
 // หา root ของโปรเจกต์ปลายทาง
 // INIT_CWD คือโฟลเดอร์ที่ผู้ใช้รัน npm install (npm / yarn / pnpm ตั้งให้เหมือนกัน)
 // ถ้าไม่มีค่อยถอยขึ้น 3 ชั้นจาก node_modules/@scope/package
@@ -73,6 +77,34 @@ function mergeHooks(projectRoot, sourceHooks) {
   return installed;
 }
 
+// เตือนถ้าโปรเจกต์ปลายทางยังไม่ได้ตั้ง auto-update
+// อ่านอย่างเดียว ไม่แก้ package.json ของใคร เพราะตอน npm install
+// npm ก็กำลังเขียนไฟล์นี้อยู่เหมือนกัน เขียนชนกันแล้วของหาย
+function warnIfNoAutoUpdate(projectRoot) {
+  const pkgFile = path.join(projectRoot, 'package.json');
+  if (!fs.existsSync(pkgFile)) return;
+
+  let targetPkg;
+  try {
+    targetPkg = JSON.parse(fs.readFileSync(pkgFile, 'utf8'));
+  } catch (e) {
+    return;
+  }
+
+  const scripts = targetPkg.scripts || {};
+
+  // ไม่มี script ชื่อ dev ก็ไม่ต้องเตือน เพราะ predev จะไม่มีวันถูกเรียก
+  if (!scripts.dev) return;
+  if (String(scripts.predev || '').indexOf(pkg.name) !== -1) return;
+
+  console.warn('');
+  console.warn('⚠️  ยังไม่ได้ตั้ง auto-update — เครื่องนี้จะค้างอยู่เวอร์ชันเดิมจนกว่าจะสั่ง npm update เอง');
+  console.warn('    ใส่บรรทัดนี้ใน "scripts" ของ package.json:');
+  console.warn('');
+  console.warn('    "predev": "npm update ' + pkg.name + ' || true"');
+  console.warn('');
+}
+
 try {
   // ทำงานเฉพาะตอนถูกติดตั้งลง node_modules เท่านั้น (กันไม่ให้ก๊อปทับตอน dev ในแพ็กเกจตัวเอง)
   if (__dirname.indexOf('node_modules') !== -1) {
@@ -100,9 +132,11 @@ try {
     }
 
     console.log(
-      '✅ Team AI Rules installed: .cursorrules, ' +
-      skillCount + ' skill file(s), ' + hookCount + ' hook(s)'
+      '✅ ' + pkg.name + '@' + pkg.version + ' installed: ' +
+      '.cursorrules, ' + skillCount + ' skill file(s), ' + hookCount + ' hook(s)'
     );
+
+    warnIfNoAutoUpdate(projectRoot);
   }
 } catch (error) {
   console.error('❌ Failed to install AI rules:', error.message);

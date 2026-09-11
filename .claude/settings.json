@@ -10,6 +10,19 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "statusMessage": "team-ai-skills:autoupdate",
+            "async": true,
+            "timeout": 120,
+            "command": "npm update @mmasterz/team-ai-skills >/dev/null 2>&1 || true"
+          }
+        ]
+      }
     ]
   }
 }

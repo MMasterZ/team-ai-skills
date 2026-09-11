@@ -32,7 +32,48 @@ npm config set //npm.pkg.github.com/:_authToken <YOUR_TOKEN>
 npm install @mmasterz/team-ai-skills --save-dev
 ```
 
-ถ้าสำเร็จจะเห็น `✅ Team AI Rules installed successfully!` และมีไฟล์ `.cursorrules` โผล่ที่ root ของโปรเจกต์
+ถ้าสำเร็จจะเห็นบรรทัดนี้ พร้อมบอกเวอร์ชันที่ได้ไป
+
+```
+✅ @mmasterz/team-ai-skills@1.1.0 installed: .cursorrules, 1 skill file(s), 1 hook(s)
+```
+
+ไม่เห็นบรรทัดนี้ = ยังไม่ได้ลง
+
+### 4. ตั้งให้อัปเดตอัตโนมัติ (แนะนำ)
+
+npm **ไม่อัปเดตเอง** ถ้าไม่ตั้งอะไรเลย ทีมจะค้างอยู่เวอร์ชันเดิมจนกว่าจะมีคนสั่ง `npm update` เอง
+
+**คนที่ใช้ Claude Code ไม่ต้องทำอะไร** แพ็กเกจแถม `SessionStart` hook มาให้แล้ว ทุกครั้งที่เปิด session มันรัน `npm update` ให้เองเบื้องหลัง (`async` ไม่ทำให้เปิดช้า)
+
+ขั้นตอนข้างล่างนี้มีไว้กันพลาดสำหรับ **คนที่ใช้ Cursor อย่างเดียว ไม่ได้เปิด Claude Code** — วิธีที่ตรงกับงานที่สุดคือผูกไว้กับคำสั่งที่ทุกคนต้องรันอยู่แล้วทุกวัน — `npm run dev`
+
+เพิ่มใน `package.json` ของโปรเจกต์ปลายทาง
+
+```json
+{
+  "scripts": {
+    "predev": "npm update @mmasterz/team-ai-skills || true",
+    "dev": "quasar dev"
+  }
+}
+```
+
+npm รัน `predev` ให้อัตโนมัติก่อน `dev` เสมอ ไม่ต้องจำอะไรเพิ่ม
+
+- `|| true` สำคัญมาก — เน็ตล่ม, token หมดอายุ, registry ล่ม จะได้ไม่บล็อกไม่ให้เปิด dev
+- แลกมาด้วยเวลาเปิด dev ช้าขึ้นเล็กน้อย และต้องต่อเน็ต
+
+**ต้องเช็คด้วยว่า version range เป็น `^`** ไม่งั้น `npm update` ขยับไม่ได้
+
+```json
+"@mmasterz/team-ai-skills": "^1.1.0"   // ✅ ขยับตามได้
+"@mmasterz/team-ai-skills": "1.1.0"    // ❌ ตรึงตาย ไม่ขยับ
+```
+
+ถ้าลืมใส่ `predev` ตัว installer จะเตือนให้ตอน `npm install` (เตือนอย่างเดียว **ไม่แก้ `package.json` ให้**  เพราะตอนติดตั้ง npm ก็กำลังเขียนไฟล์นั้นอยู่เหมือนกัน เขียนชนกันแล้วของหาย)
+
+> `npm ci` ลงตาม `package-lock.json` เป๊ะ ๆ และไม่รัน `predev` ด้วย ถ้า CI ใช้ `npm ci` เครื่อง CI จะไม่ได้ rules เวอร์ชันใหม่ — ปกติไม่เป็นปัญหา เพราะ rules มีไว้ให้คนเขียนโค้ด ไม่ใช่ให้ CI
 
 ---
 
@@ -71,6 +112,13 @@ hook ที่แพ็กเกจนี้ใส่จะติด tag `team-a
 | `.cursorrules` | Cursor | `rules/team-guidelines.md` |
 | `.claude/skills/*/SKILL.md` | Claude Code | `.claude/skills/` ในแพ็กเกจ |
 | `.claude/settings.json` (เฉพาะส่วน `hooks`) | Claude Code | `.claude/settings.json` ในแพ็กเกจ |
+
+### Hooks ที่แจกอยู่ตอนนี้
+
+| tag | event | ทำอะไร |
+|---|---|---|
+| `team-ai-skills:caveman` | `UserPromptSubmit` | บังคับสไตล์ caveman ทุกคำถาม |
+| `team-ai-skills:autoupdate` | `SessionStart` | รัน `npm update` เบื้องหลังทุกครั้งที่เปิด session |
 
 ### Skills ที่แจกอยู่ตอนนี้
 
