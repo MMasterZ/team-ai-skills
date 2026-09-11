@@ -10,40 +10,107 @@
 - ฟังก์ชันและตัวแปรต้องตั้งชื่อเป็นภาษาอังกฤษแบบ camelCase ที่สื่อความหมายชัดเจน
 - ต้องคอมเมนต์อธิบาย Logic หรือ Business Rule ที่สำคัญเป็น "ภาษาไทย" เสมอ
 
-## Data & Naming
+---
 
-- **หนึ่งแนวคิดทางธุรกิจ = หนึ่ง getter เดียว** ห้ามเช็ค field ดิบกระจายตามไฟล์
-  ถ้าต้องถามว่า "บัญชีนี้เป็น demo ไหม" ให้มี `isDemo` ที่เดียวใน store แล้วเรียกใช้ทุกที่
-  _เคสจริง: มีวิธีถามคำถามเดียวกัน 4 แบบ (`studentType=='demo'`, `accountType=='demo'`, `isDemoAccount`, `isDemo`) กระจาย 24+ จุด ทำให้ feature ไม่ทำงานเพราะเช็คคนละ field กับที่ backend ส่งมา_
+# คู่มือมาตรฐานการพัฒนาโค้ดสำหรับ Vue.js และการทำงานร่วมกับ AI
 
-- **ตั้งชื่อตามสิ่งที่เก็บจริง ไม่ใช่สิ่งที่ตั้งใจจะให้เป็น**
-  ถ้าเก็บ timestamp หมดอายุ ให้ชื่อ `demoExpiresAt` ไม่ใช่ `demoRemaining`
-  _เคสจริง: `demoRemaining` เก็บ timestamp หมดอายุ แต่ชื่อบอกว่า "เวลาที่เหลือ" → client คำนวณสลับด้าน นาฬิกาโชว์ 6 ชม. ทั้งที่ตั้งไว้ 3 ชม._
+(Vue.js & AI-Assisted Engineering Standards)
 
-- **เทียบค่าต้องเทียบหน่วยเดียวกันเสมอ** ก่อนเขียนเงื่อนไขให้ถามว่าสองฝั่งเป็นหน่วยอะไร (ms / วินาที / timestamp)
-  _เคสจริง: `if (demoRemaining > 300000)` เอา timestamp 13 หลักไปเทียบกับ 5 นาที → จริงตลอด ป้ายเตือนเวลาใกล้หมดไม่เคยทำงาน_
+## 1. วัตถุประสงค์ (Objective)
 
-## Vue / Component
+สร้างมาตรฐานกลางในการพัฒนาเว็บแอปพลิเคชันด้วย Vue.js (TypeScript) ทั้งสำหรับการเขียนโค้ดโดยนักพัฒนา และการควบคุม AI Assistants ให้สร้างโค้ดที่มีโครงสร้างเดียวกัน ปลอดภัย ประสิทธิภาพสูง และส่งต่องานได้ทันทีโดยไม่มีข้อขัดแย้งเรื่อง Base Code
 
-- **UI ชิ้นเดียวกันที่โผล่หลายหน้า ต้องแยกเป็น component ห้าม copy-paste**
-  _เคสจริง: หน้าเล่นวิดีโอ 6 หน้า ใส่ `playsinline` ครบ 5 หน้า หลุดไป 1 → นักเรียนบน iPad ดูวิดีโอไม่ได้ กว่าจะรู้คือมี ticket แจ้งเข้ามา_
+---
 
-- **ข้อมูลจาก store / API ที่ใช้ใน template ต้องกัน null เสมอ** ใช้ optional chaining + ค่า default (`store.data?.tier ?? ''`, `arr?.includes(x)`)
-  _เคสจริง: `studentStore.studentData.tier` พังทั้งหน้าตอน logout เพราะ store ถูก reset ก่อน route เปลี่ยน และ `courseData.levelSkills.includes()` throw ตอนคอร์สยังโหลดไม่เสร็จ_
+## 2. โครงสร้างและการจัดรูปแบบโค้ด (Vue.js Code Style & Formatting)
 
-- **ทุกอย่างที่ "เปิด" ไว้ ต้อง "ปิด" ใน `onBeforeUnmount`** — `setInterval` / `setTimeout` ที่วนต่อ / `addEventListener` / Firebase `onSnapshot`
-  _เคสจริง: animation chain ไม่เคยถูก stop ตอน teardown → เข้า-ออกหน้า lobby ทีไรก็ทิ้ง interval ค้างสะสมเรื่อย ๆ_
+- **เครื่องมือบังคับใช้อัตโนมัติ (Automated Tooling):**
+    - ใช้ **ESLint** (ร่วมกับ `@vue/eslint-config-typescript`) และ **Prettier** จัดรูปแบบโค้ด
+    - ตั้งค่า **Pre-commit Hook** (Husky + lint-staged) ตรวจสอบไฟล์ `.vue`, `.ts`, `.js` ก่อน Commit
+- **รูปแบบ Component:**
+    - บังคับใช้ **Single File Component (SFC)** ร่วมกับ **`<script setup lang="ts">`** เท่านั้น (ห้ามใช้ Options API ในโปรเจกต์ใหม่)
+    - ลำดับแท็กใน SFC: `<script setup lang="ts">` -> `<template>` -> `<style scoped>`
+- **การตั้งชื่อ (Naming Conventions):**
+    - Component files: ใช้ **PascalCase** เสมอ (เช่น `UserProfileCard.vue`, `AgentMetricChart.vue`) ห้ามใช้คำเดี่ยวตามกฎของ Vue
+    - Composable functions: ใช้ camelCase ขึ้นต้นด้วย `use` เสมอ (เช่น `useAgentSession.ts`)
+    - ตัวแปรและฟังก์ชัน: ใช้ `camelCase`
+    - Props & Emits: Props ใช้ `camelCase` ใน script แต่เป็น `kebab-case` ใน template / Emits ใช้ `kebab-case` หรือ `camelCase` ตามข้อตกลงทีม
+- **โครงสร้างโฟลเดอร์ (Folder Architecture):**
+    - `src/components/` แยกย่อยตาม Domain หรือ UI Components กลาง
+    - `src/composables/` เก็บ State/Logic ที่นำกลับมาใช้ซ้ำได้
+    - `src/stores/` เก็บ Pinia stores
+    - `src/types/` หรือ `src/models/` เก็บ TypeScript Interfaces/Types
+    - `src/services/` หรือ `src/api/` เก็บ Logic การยิง API และติดต่อระบบภายนอก
 
-- **ชื่อ event ต้องตรงกันทั้ง 3 จุด**: `emit()` ↔ `defineEmits()` ↔ `@listener` ฝั่ง parent
-  _เคสจริง: `emit("practice")` แต่ประกาศ `defineEmits(['lesson-learning'])` และ parent ฟัง `@lesson-learning` → กดปุ่มแล้วเงียบ ไม่มี error ให้เห็น_
+---
 
-- **แก้ที่ source of truth ไม่ใช่แก้ที่ template** ถ้าเงื่อนไขเดียวกันถูกใช้ทั้งการแสดงผลและการทำงาน ให้ดึงเป็น computed ตัวเดียวแล้วใช้ทั้ง `v-if`/`:disable` และ `@click`
-  _เคสจริง: ไอคอนกุญแจโชว์ว่าล็อก แต่ `@click` ไม่ได้เช็คเงื่อนไขเดียวกัน → กดทะลุเข้าไปทำแบบฝึกหัดที่ล็อกอยู่ได้_
+## 3. ความปลอดภัยของข้อมูลและประเภท (TypeScript & Vue Typing)
 
-## Security & Hygiene
+- **Strict Typing:**
+    - เปิด `strict: true` ใน `tsconfig.json` และ **ห้ามใช้ `any` เด็ดขาด** (ใช้ `unknown` ร่วมกับ Type Narrowing หากยังไม่ทราบประเภทข้อมูล)
+- **Props & Emits Definition:**
+    - กำหนด Props ด้วย Type-based Declaration เท่านั้น:
+    `defineProps<{ title: string; count?: number }>()`
+    - กำหนด Emits ด้วย Type-based:
+    `defineEmits<{ (e: 'update', value: string): void }>()`
+- **Data Models:**
+    - กำหนด Interface หรือ Type ชัดเจนสำหรับ Entity ทุกตัว เช่น Interface ของ Agent, Metrics, User Data
 
-- **ห้าม commit URL ของ local emulator หรือ IP เครื่องตัวเอง** ใช้ env var เสมอ ถ้าต้องการ URL local ให้เก็บไว้เป็นคอมเมนต์
-  _เคสจริง: เจอ `http://192.168.1.45:5001/...` hardcode ค้าง 4 จุดใน store ถ้าขึ้น production คือพังทั้งระบบ_
+---
 
-- **ลบ debug log ก่อน merge** (`console.log("*** ...")` และเพื่อน ๆ)
-  _เคสจริง: เจอค้าง 19 บรรทัดใน Cloud Function ที่กำลังจะ deploy_
+## 4. สถาปัตยกรรมและ State Management (Vue Architecture)
+
+- **Pinia State Management:**
+    - จัดการ Global State ด้วย **Pinia** (Setup Store syntax หรือ Option syntax ให้ตรงกันทั้งทีม แนะนำ Setup Store)
+    - ห้าม Mutate State ข้าม Store โดยตรง ให้ทำผ่าน Actions
+- **Composables vs Components:**
+    - ดึง Business Logic ที่ซับซ้อนออกจากไฟล์ `.vue` ไปไว้ใน `composables/` เพื่อให้ Component ทำหน้าที่เฉพาะการแสดงผล (Presentation Layer)
+- **Scoped Styles:**
+    - บังคับใช้ `<style scoped>` ทุก Component เสมอ ป้องกัน CSS รั่วไหลไปกระทบ Component อื่น
+
+---
+
+## 5. การจัดการข้อผิดพลาดและบันทึกระบบ (Error Handling & Logging)
+
+- **Global Error Boundary:**
+    - ติดตั้ง `app.config.errorHandler` ในระดับ Root เพื่อดักจับ Error ที่หลุดมาจาก Vue Component Tree
+- **No Silent Failures:**
+    - ห้ามปล่อย `catch (error) {}` ว่างเปล่า ต้องมี UI Feedback (เช่น Toast, Notification, Error State) แจ้งเตือนผู้ใช้เสมอ
+- **Structured Logging:**
+    - สร้าง Logging Utility กลาง ห้ามใช้ `console.log()` ทิ้งไว้ในโค้ด Production
+
+---
+
+## 6. การทดสอบและเกณฑ์เสร็จสมบูรณ์ (Testing & Definition of Done)
+
+- **Definition of Done (DoD):**
+    1. โค้ดผ่าน `vue-tsc --noEmit` (Type Check) และ ESLint 100%
+    2. Component มี Unit Test ด้วย **Vitest** และ **Vue Test Utils** ครอบคลุมพฤติกรรมหลัก
+    3. สามารถ Build ผ่านคำสั่ง `vite build` ได้โดยไม่มี Error
+- **Mocking API:**
+    - Mock Network Request ด้วย MSW (Mock Service Worker) หรือ Vitest Spies ห้ามยิง API Production ในเทสต์
+
+---
+
+## 7. วินัยการใช้งาน Git และการรีวิวโค้ด (Git Hygiene & Code Review)
+
+- **Conventional Commits:** ใช้รูปแบบสากล `feat:`, `fix:`, `refactor:`, `style:`, `chore:`
+- **PR Rules:**
+    - ห้าม Push เข้า `main` หรือ `develop` โดยตรง
+    - แนบภาพ Screenshot หรือ Video ใน PR หากมีการเปลี่ยนแปลงด้าน UI/UX
+
+---
+
+## 8. กฎการควบคุม AI สำหรับงาน Vue.js (AI Guardrails in Vue Development)
+
+- **AI Context Files (`.cursorrules` / Copilot System Prompt):**
+    - กำหนดชัดเจนใน System Prompt ว่า:
+        - "You must write Vue 3 using `<script setup lang=\"ts\">` only. Never use Vue 2 or Options API."
+        - "Always use Pinia for global state, and Vitest for testing."
+        - "Always define typed props using `defineProps<{...}>`."
+- **ป้องกัน AI Hallucination & Code Bloat:**
+    - ห้าม AI แอบ Import ไลบรารีภายนอกที่ไม่ได้ระบุใน `package.json`
+    - สั่ง AI ห้ามสร้างตัวแปร `ref` ซ้ำซ้อน และใช้ `computed` อย่างถูกต้อง หลีกเลี่ยง Memory Leak จาก Watcher ที่ไม่จำเป็น
+- **Human Accountability:**
+    - ผู้พัฒนาต้องตรวจสอบ Re-rendering behavior และ Lifecycle hooks (`onMounted`, `onUnmounted`) ของโค้ดที่ AI สร้างขึ้นเสมอ เพื่อป้องกัน Event Listener หรือ Timer ค้าง
+
