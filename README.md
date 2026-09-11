@@ -8,55 +8,66 @@ Source of truth มีไฟล์เดียวคือ [`rules/team-guidelin
 
 ## Install (ในโปรเจกต์ปลายทาง)
 
-แพ็กเกจอยู่บน **GitHub Packages** (private registry) ไม่ใช่ npm สาธารณะ ต้องตั้งค่า registry + token ก่อน
-
-### 1. สร้าง GitHub Personal Access Token
-
-สร้าง PAT (classic) ที่ Settings → Developer settings → Tokens ให้สิทธิ์ **`read:packages`** อย่างเดียวพอ
-
-### 2. ใส่ token ไว้ที่ user-level ไม่ใช่ในโปรเจกต์
-
-วิธีที่ปลอดภัยที่สุดคือเก็บ token ไว้ที่ `~/.npmrc` (เครื่องละครั้ง ใช้ได้ทุกโปรเจกต์) แล้ว **ไม่ต้องมีไฟล์ `.npmrc` ในโปรเจกต์เลย**
+ลงตรงจาก git tag ของ repo นี้ **ไม่ต้องใช้ token ไม่ต้องตั้ง registry ไม่ต้องมี `.npmrc`**
 
 ```bash
-npm config set @mmasterz:registry https://npm.pkg.github.com
-npm config set //npm.pkg.github.com/:_authToken <YOUR_TOKEN>
+npm install "github:MMasterZ/team-ai-skills#semver:^1.2.0" --save-dev
 ```
 
-> ⚠️ ถ้าจำเป็นต้องสร้าง `.npmrc` ในโปรเจกต์จริง ๆ **ต้องใส่ `.npmrc` ใน `.gitignore` ก่อนเสมอ**
-> token ที่หลุดขึ้น GitHub ถือว่าใช้ไม่ได้แล้ว ต้อง revoke แล้วออกใหม่ ไม่ใช่แค่ลบ commit
-
-### 3. ติดตั้ง
+pnpm
 
 ```bash
-npm install @mmasterz/team-ai-skills --save-dev
+pnpm add -D "github:MMasterZ/team-ai-skills#semver:^1.2.0"
 ```
 
 ถ้าสำเร็จจะเห็นบรรทัดนี้ พร้อมบอกเวอร์ชันที่ได้ไป
 
 ```
-✅ @mmasterz/team-ai-skills@1.1.0 installed: .cursorrules, 1 skill file(s), 1 hook(s)
+✅ @mmasterz/team-ai-skills@1.2.1 installed: .cursorrules, 1 skill file(s), 2 hook(s)
 ```
 
-ไม่เห็นบรรทัดนี้ = ยังไม่ได้ลง
+ไม่เห็นบรรทัดนี้ = ยังไม่ได้ลง ดู [Troubleshooting](#troubleshooting)
 
-> ⚠️ **ห้ามลงด้วย `github:` หรือ git URL**
->
-> ```bash
-> npm install github:MMasterZ/team-ai-skills   # ❌ อย่าทำ
-> ```
->
-> แบบนั้น npm จะเขียน **ชื่อ/URL** ลง `package.json` แทนเลข version
->
-> ```json
-> "@mmasterz/team-ai-skills": "github:MMasterZ/team-ai-skills"   // ❌ npm update ไม่ทำงานตลอดกาล
-> "@mmasterz/team-ai-skills": "^1.2.0"                           // ✅ ถูกต้อง
-> ```
->
-> ไม่มีเลข version = ไม่มีอะไรให้เทียบ = ค้างเวอร์ชันเดิมถาวร ต้องลงจาก registry เท่านั้น
-> ถ้าลงผิดไปแล้ว ดู [Troubleshooting](#troubleshooting)
+### `#semver:` ห้ามลืม
 
-### 4. ตั้งให้อัปเดตอัตโนมัติ (แนะนำ)
+ส่วนนี้คือหัวใจ ถ้าไม่ใส่ `npm update` จะไม่มีวันทำงาน
+
+```json
+"github:MMasterZ/team-ai-skills#semver:^1.2.0"   // ✅ ไล่ตาม git tag ให้เอง
+"github:MMasterZ/team-ai-skills"                 // ❌ ค้างเวอร์ชันเดิมถาวร
+```
+
+แบบล่างไม่มีเลขให้ npm เทียบ มันเลยไม่รู้ว่ามีของใหม่ ลงผิดไปแล้วดู [Troubleshooting](#troubleshooting)
+
+### ทางเลือก: GitHub Packages (ต้องใช้ token)
+
+ไม่จำเป็นต้องใช้ เก็บไว้เผื่อวันที่ repo ต้องเปลี่ยนเป็น private
+
+<details>
+<summary>กดดูวิธี</summary>
+
+GitHub Packages **บังคับ token เสมอ** ต่อให้ repo เป็น public ก็ตาม
+
+1. สร้าง PAT (classic) ที่ Settings → Developer settings → Tokens ให้สิทธิ์ **`read:packages`** พอ
+2. เก็บ token ไว้ที่ `~/.npmrc` ระดับเครื่อง อย่าไว้ในโปรเจกต์
+
+   ```bash
+   npm config set @mmasterz:registry https://npm.pkg.github.com
+   npm config set //npm.pkg.github.com/:_authToken <YOUR_TOKEN>
+   ```
+
+3. ลง
+
+   ```bash
+   npm install @mmasterz/team-ai-skills --save-dev
+   ```
+
+> ⚠️ ถ้าจำเป็นต้องมี `.npmrc` ในโปรเจกต์จริง ๆ **ต้องใส่ `.npmrc` ใน `.gitignore` ก่อนเสมอ**
+> token ที่หลุดขึ้น GitHub ถือว่าใช้ไม่ได้แล้ว ต้อง revoke แล้วออกใหม่ ไม่ใช่แค่ลบ commit
+
+</details>
+
+## ตั้งให้อัปเดตอัตโนมัติ (แนะนำ)
 
 npm **ไม่อัปเดตเอง** ถ้าไม่ตั้งอะไรเลย ทีมจะค้างอยู่เวอร์ชันเดิมจนกว่าจะมีคนสั่ง `npm update` เอง
 
@@ -152,13 +163,14 @@ hook ที่แพ็กเกจนี้ใส่จะติด tag `team-a
 
 **เพิ่ม hook ใหม่:** เพิ่มใน `.claude/settings.json` ของแพ็กเกจ และตั้ง `statusMessage` ขึ้นต้นด้วย `team-ai-skills:` เสมอ ไม่งั้นระบบ merge จะจำไม่ได้ว่าเป็นของเราแล้วจะเกิด hook ซ้ำทุกครั้งที่ install
 
-จากนั้น **bump version แล้ว publish** — ข้อนี้ลืมไม่ได้ ถ้า version เท่าเดิม npm จะไม่ยอม publish และเครื่องทีมก็จะไม่ดึงของใหม่
+จากนั้น **bump version แล้ว push tag** — ทีมไล่ตาม git tag เพราะฉะนั้น tag คือตัวปล่อยของ ไม่มี tag = ไม่มีใครได้ของใหม่
 
 ```bash
-npm version patch      # หรือ minor / major
-npm publish
+npm version patch      # หรือ minor / major — สร้าง commit + tag ให้เอง
 git push --follow-tags
 ```
+
+`--follow-tags` ลืมไม่ได้ ถ้าลืม tag จะค้างอยู่ในเครื่องตัวเอง ทีมมองไม่เห็น
 
 แล้วบอกทีมให้รัน
 
@@ -166,46 +178,59 @@ git push --follow-tags
 npm update @mmasterz/team-ai-skills
 ```
 
-> การ publish ต้องใช้ token ที่มีสิทธิ์ `write:packages` (คนละตัวกับที่ทีมใช้ติดตั้ง)
+หรือไม่ต้องบอกก็ได้ ถ้าเขาตั้ง auto-update ไว้แล้ว
 
-### เช็คก่อน publish ว่าไฟล์ครบ
+### เช็คว่า tag ขึ้นไปจริง
 
 ```bash
-npm pack --dry-run
+git ls-remote --tags origin
 ```
 
-ต้องเห็น `rules/`, `.claude/skills/`, `.claude/settings.json` และต้อง **ไม่เห็น `.npmrc`**
+ต้องเห็น tag ตัวใหม่ล่าสุด
+
+<details>
+<summary>ถ้ายังใช้ GitHub Packages คู่กันอยู่ด้วย</summary>
+
+ต้อง `npm publish` เพิ่มอีกขั้น และ token ต้องมีสิทธิ์ `write:packages` (คนละตัวกับที่ทีมใช้ติดตั้ง)
+
+```bash
+npm publish
+npm pack --dry-run    # เช็คไฟล์ก่อน: ต้องมี rules/ .claude/ และต้องไม่มี .npmrc
+```
+
+npm **ห้าม publish ทับ version เดิมเด็ดขาด** ต้อง bump ทุกครั้ง
+
+</details>
 
 ---
 
 ## Troubleshooting
 
-### `package.json` ขึ้นเป็นชื่อ/URL ไม่ใช่เลข version
+### `npm update` ไม่ทำงาน ค้างเวอร์ชันเดิมตลอด
 
-อาการ — `npm update` รันแล้วไม่มีอะไรเกิดขึ้น ค้างเวอร์ชันเดิมตลอด
+เปิด `package.json` ดูบรรทัด dependency ถ้าเป็นแบบนี้คือขาด `#semver:`
 
 ```json
 "@mmasterz/team-ai-skills": "github:MMasterZ/team-ai-skills"
 ```
 
-สาเหตุคือลงมาจาก git ไม่ใช่จาก registry แก้โดยลงใหม่
+npm ไม่มีเลขให้เทียบ เลยไม่รู้ว่ามีของใหม่ แก้โดยลงใหม่ให้มี `#semver:`
 
 ```bash
 npm uninstall @mmasterz/team-ai-skills
-npm install @mmasterz/team-ai-skills --save-dev
+npm install "github:MMasterZ/team-ai-skills#semver:^1.2.0" --save-dev
 ```
 
 pnpm ใช้
 
 ```bash
 pnpm remove @mmasterz/team-ai-skills
-pnpm add -D @mmasterz/team-ai-skills
+pnpm add -D "github:MMasterZ/team-ai-skills#semver:^1.2.0"
 ```
 
-เสร็จแล้วเปิด `package.json` เช็คว่าได้ `"^1.2.0"` แล้วจริง
+เสร็จแล้วเช็คว่าบรรทัดนั้นมี `#semver:` ต่อท้ายจริง
 
-> ถ้า `npm install` เจ๊ง 401 หรือ 404 แปลว่ายังไม่ได้ตั้ง token — กลับไปทำ [ขั้นตอนที่ 2](#2-ใส่-token-ไว้ที่-user-level-ไม่ใช่ในโปรเจกต์) ก่อน
-> อย่าแก้ปัญหาด้วยการกลับไปใช้ `github:` เพราะจะวนกลับมาที่ปัญหาเดิม
+> เครื่องหมาย `"` ครอบ URL ห้ามลืม ถ้าไม่ครอบ shell บางตัวจะกิน `#` ทิ้ง แล้วกลายเป็นไม่มี semver อีก
 
 ### ลงแล้วแต่ไม่เห็นบรรทัด `✅`
 
@@ -219,7 +244,7 @@ pnpm add -D @mmasterz/team-ai-skills
 ยังได้ของเก่าอยู่ ต้องได้ `1.2.0` ขึ้นไป
 
 ```bash
-npm install @mmasterz/team-ai-skills@latest --save-dev
+npm install "github:MMasterZ/team-ai-skills#semver:^1.2.0" --save-dev
 ```
 
 ---
@@ -231,6 +256,8 @@ npm install @mmasterz/team-ai-skills@latest --save-dev
 - **ยังไม่แจก `CLAUDE.md`** rules หลักไปถึง Claude Code ผ่าน skill กับ hook แล้ว แต่ตัว `rules/team-guidelines.md` เต็ม ๆ ยังไม่ได้ถูกวางเป็น `CLAUDE.md` ที่ปลายทาง — ดู [Roadmap](#roadmap)
 - **ถ้า postinstall ล้มเหลว จะไม่ทำให้ install พัง** `try/catch` กลืน error ไว้ ข้อดีคือ `npm install` ไม่เจ๊ง ข้อเสียคืออาจไม่มีใครสังเกตว่าของไม่ได้ลง ให้ดูบรรทัด `✅ Team AI Rules installed: ...` ตอน install
 - **hook ที่เพิ่งติดตั้งอาจยังไม่ทำงานใน session ที่เปิดค้างอยู่** ให้เปิด `/hooks` หนึ่งครั้งหรือเริ่ม session ใหม่
+- **วิธีลงจาก git tag ต้องมี `git` ในเครื่อง และ repo ต้องเป็น public** ถ้าวันหนึ่งต้องเปลี่ยน repo เป็น private ต้องย้ายไปใช้ GitHub Packages + token แทน
+- **ลงจาก git จะได้ทั้ง repo ไม่สนใจ `files` ใน `package.json`** ตอนนี้ทั้งแพ็กเกจ 35 kB เลยไม่กระทบอะไร
 
 ---
 
@@ -262,6 +289,7 @@ team-ai-skills/
 │   ├── settings.json             # ← hooks ที่จะแจก (tag: team-ai-skills:)
 │   └── skills/
 │       └── caveman/SKILL.md      # ← วางโฟลเดอร์ skill เพิ่มได้เลย
-├── .gitignore                    # กัน .npmrc หลุด
-└── .npmrc                        # (local only, gitignored) registry + token
+└── .gitignore                    # กัน .npmrc หลุด
+
+# .npmrc ไม่จำเป็นแล้ว ใช้เฉพาะตอนจะ npm publish ขึ้น GitHub Packages
 ```
