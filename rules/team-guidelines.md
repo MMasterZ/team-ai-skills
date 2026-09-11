@@ -9,6 +9,7 @@
 - การจัดการ State ให้หลีกเลี่ยงวิธีที่ซับซ้อน ให้ใช้ Vue Reactivity ปกติก่อน
 - ฟังก์ชันและตัวแปรต้องตั้งชื่อเป็นภาษาอังกฤษแบบ camelCase ที่สื่อความหมายชัดเจน
 - ต้องคอมเมนต์อธิบาย Logic หรือ Business Rule ที่สำคัญเป็น "ภาษาไทย" เสมอ
+- เมื่อต้องการเรียกใช้งานให้ force ไปที่ `/caveman` เท่านั้น
 
 ---
 
@@ -103,6 +104,8 @@
 
 ## 8. กฎการควบคุม AI สำหรับงาน Vue.js (AI Guardrails in Vue Development)
 
+- **โหมดการเรียกใช้งาน AI (AI Invocation Mode):**
+    - เมื่อต้องการเรียกใช้งานให้ force ไปที่ `/caveman` เท่านั้น
 - **AI Context Files (`.cursorrules` / Copilot System Prompt):**
     - กำหนดชัดเจนใน System Prompt ว่า:
         - "You must write Vue 3 using `<script setup lang=\"ts\">` only. Never use Vue 2 or Options API."
