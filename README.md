@@ -41,50 +41,92 @@ npm install @mmasterz/team-ai-skills --save-dev
 ```
 npm install
   └─ postinstall → node install-rules.js
-       ├─ เช็คว่าตัวเองอยู่ใน node_modules ไหม (ถ้าไม่ใช่ = กำลัง dev ใน repo นี้ → ไม่ทำอะไร)
-       ├─ ถอยขึ้นไป 3 ชั้นจาก node_modules/@mmasterz/team-ai-skills เพื่อหา root ของโปรเจกต์
-       └─ copy rules/team-guidelines.md → <project-root>/.cursorrules
+       ├─ ทำงานเฉพาะตอนอยู่ใน node_modules (ไม่งั้นคือกำลัง dev ในแพ็กเกจเอง → ข้าม)
+       ├─ หา root ปลายทางจาก INIT_CWD (fallback: ถอยขึ้น 3 ชั้น)
+       ├─ rules/team-guidelines.md  →  <root>/.cursorrules            (Cursor อ่าน)
+       ├─ .claude/skills/**         →  <root>/.claude/skills/**       (Claude Code อ่าน)
+       └─ hooks ใน .claude/settings.json  →  merge เข้า <root>/.claude/settings.json
 ```
 
-ทั้งหมดอยู่ใน [`install-rules.js`](install-rules.js) ~18 บรรทัด ไม่มี dependency
+ทั้งหมดอยู่ใน [`install-rules.js`](install-rules.js) ไม่มี dependency
+
+### การ merge hooks ปลอดภัยแค่ไหน
+
+installer **ไม่เขียนทับ** `.claude/settings.json` ของปลายทาง แต่อ่านมา merge แล้วเขียนกลับ:
+
+- `permissions` และ settings อื่น ๆ ของโปรเจกต์ปลายทาง ไม่ถูกแตะ
+- hook ที่ผู้ใช้เขียนเอง ไม่ถูกลบ
+- hook ของแพ็กเกจอื่น ไม่ถูกลบ (แยกกันด้วย tag ใน `statusMessage`)
+- รัน `npm install` ซ้ำกี่รอบ hook ของแพ็กเกจนี้ก็มีตัวเดียว ไม่ซ้ำ ไม่บวม
+- ถ้า `settings.json` เดิมพังจน parse ไม่ได้ จะข้ามไปเฉย ๆ ไม่เขียนทับ
+
+hook ที่แพ็กเกจนี้ใส่จะติด tag `team-ai-skills:` เสมอ ใครอยากเอาออกก็ลบ entry นั้นได้ตรง ๆ หรือดูผ่าน `/hooks`
 
 ---
 
-## How to update rules
+## What gets installed
 
-1. แก้ [`rules/team-guidelines.md`](rules/team-guidelines.md)
-2. bump version ใน `package.json` — **ข้อนี้ลืมไม่ได้** ถ้า version เท่าเดิม npm จะไม่ยอม publish และเครื่องทีมก็จะไม่ดึงของใหม่
-3. publish
+| ไฟล์ปลายทาง | ใครอ่าน | มาจาก |
+|---|---|---|
+| `.cursorrules` | Cursor | `rules/team-guidelines.md` |
+| `.claude/skills/*/SKILL.md` | Claude Code | `.claude/skills/` ในแพ็กเกจ |
+| `.claude/settings.json` (เฉพาะส่วน `hooks`) | Claude Code | `.claude/settings.json` ในแพ็กเกจ |
 
-   ```bash
-   npm version patch      # หรือ minor / major
-   npm publish
-   git push --follow-tags
-   ```
-4. บอกทีมให้รัน
+### Skills ที่แจกอยู่ตอนนี้
 
-   ```bash
-   npm update @mmasterz/team-ai-skills
-   ```
+- **`/caveman`** — ตอบสั้น ห้วน คำง่าย ไม่มีน้ำ
+  มาพร้อม `UserPromptSubmit` hook ที่ **บังคับใช้สไตล์นี้ทุกคำถามอัตโนมัติ** ไม่ต้องพิมพ์ `/caveman` เอง
+  hook กำกับไว้ว่าห้ามใช้สไตล์นี้กับ code block, path, ชื่อตัวแปร, คำสั่ง, เลขเวอร์ชัน และ error message — ของพวกนี้ต้องตรงเป๊ะเสมอ
 
-   `postinstall` จะยิงอีกรอบแล้วเขียน `.cursorrules` ทับให้เอง
+---
+
+## How to add a new rule or skill
+
+**เพิ่ม/แก้ rules:** แก้ [`rules/team-guidelines.md`](rules/team-guidelines.md)
+
+**เพิ่ม skill ใหม่:** สร้างโฟลเดอร์ใน `.claude/skills/<ชื่อ>/SKILL.md` — installer ก๊อปทุกอย่างในนั้นให้เอง **ไม่ต้องแก้ `install-rules.js`**
+
+**เพิ่ม hook ใหม่:** เพิ่มใน `.claude/settings.json` ของแพ็กเกจ และตั้ง `statusMessage` ขึ้นต้นด้วย `team-ai-skills:` เสมอ ไม่งั้นระบบ merge จะจำไม่ได้ว่าเป็นของเราแล้วจะเกิด hook ซ้ำทุกครั้งที่ install
+
+จากนั้น **bump version แล้ว publish** — ข้อนี้ลืมไม่ได้ ถ้า version เท่าเดิม npm จะไม่ยอม publish และเครื่องทีมก็จะไม่ดึงของใหม่
+
+```bash
+npm version patch      # หรือ minor / major
+npm publish
+git push --follow-tags
+```
+
+แล้วบอกทีมให้รัน
+
+```bash
+npm update @mmasterz/team-ai-skills
+```
 
 > การ publish ต้องใช้ token ที่มีสิทธิ์ `write:packages` (คนละตัวกับที่ทีมใช้ติดตั้ง)
+
+### เช็คก่อน publish ว่าไฟล์ครบ
+
+```bash
+npm pack --dry-run
+```
+
+ต้องเห็น `rules/`, `.claude/skills/`, `.claude/settings.json` และต้อง **ไม่เห็น `.npmrc`**
 
 ---
 
 ## Limitations (รู้ไว้ก่อนใช้)
 
-- **เขียน `.cursorrules` ทับทุกครั้งที่ install** ถ้าโปรเจกต์ไหนมี `.cursorrules` เฉพาะของตัวเอง จะโดนทับหายทันที ตอนนี้ยังไม่มีกลไก merge หรือสำรองไฟล์เดิม
-- **ยังไม่รองรับ Claude Code** installer เขียนเฉพาะ `.cursorrules` ซึ่งมีแต่ Cursor ที่อ่าน ส่วน Claude Code อ่าน `CLAUDE.md` แปลว่าตอนนี้ rules ไปไม่ถึง Claude Code เลย ทั้งที่ทีมใช้ทั้งสองตัวคู่กัน (Claude Code รันใน terminal ของ Cursor) — ดู [Roadmap](#roadmap)
-- **ผูกกับโครงสร้าง `node_modules` แบบ npm** โค้ดถอยขึ้น 3 ชั้นตรง ๆ ถ้าทีมย้ายไป pnpm (ซึ่งวางแพ็กเกจคนละแบบ) path จะเพี้ยน ควรเปลี่ยนไปใช้ env var `INIT_CWD` ที่ npm/yarn/pnpm ตั้งให้อยู่แล้ว
-- **ถ้า postinstall ล้มเหลว จะไม่ทำให้ install พัง** ตัว `try/catch` กลืน error ไว้ ข้อดีคือ `npm install` ไม่เจ๊ง ข้อเสียคืออาจไม่มีใครสังเกตว่า rules ไม่ได้ลง
+- **เขียน `.cursorrules` ทับทุกครั้งที่ install** ถ้าโปรเจกต์ไหนมี `.cursorrules` เฉพาะของตัวเอง จะโดนทับหายทันที (ต่างจาก `settings.json` ที่ merge ให้) — ของเฉพาะโปรเจกต์ให้ไปไว้ใน `CLAUDE.md` แทน
+- **ไฟล์ skill ชื่อซ้ำจะถูกทับ** ถ้าโปรเจกต์ปลายทางมี `.claude/skills/caveman/` ของตัวเองอยู่ จะโดนของแพ็กเกจทับ
+- **ยังไม่แจก `CLAUDE.md`** rules หลักไปถึง Claude Code ผ่าน skill กับ hook แล้ว แต่ตัว `rules/team-guidelines.md` เต็ม ๆ ยังไม่ได้ถูกวางเป็น `CLAUDE.md` ที่ปลายทาง — ดู [Roadmap](#roadmap)
+- **ถ้า postinstall ล้มเหลว จะไม่ทำให้ install พัง** `try/catch` กลืน error ไว้ ข้อดีคือ `npm install` ไม่เจ๊ง ข้อเสียคืออาจไม่มีใครสังเกตว่าของไม่ได้ลง ให้ดูบรรทัด `✅ Team AI Rules installed: ...` ตอน install
+- **hook ที่เพิ่งติดตั้งอาจยังไม่ทำงานใน session ที่เปิดค้างอยู่** ให้เปิด `/hooks` หนึ่งครั้งหรือเริ่ม session ใหม่
 
 ---
 
 ## Roadmap
 
-- [ ] เขียน `CLAUDE.md` เพิ่มจาก source เดียวกัน โดย **append ใต้ marker** ไม่ใช่ copy ทับ เพราะโปรเจกต์ปลายทางมักมี `CLAUDE.md` เฉพาะของตัวเอง (คำสั่ง build, สถาปัตยกรรม ฯลฯ) ที่ห้ามหาย:
+- [ ] แจก `rules/team-guidelines.md` เป็น `CLAUDE.md` ที่ปลายทางด้วย โดย **append ใต้ marker** ไม่ใช่ copy ทับ เพราะโปรเจกต์ปลายทางมักมี `CLAUDE.md` เฉพาะของตัวเอง (คำสั่ง build, สถาปัตยกรรม ฯลฯ) ที่ห้ามหาย:
 
   ```
   <!-- BEGIN team-ai-skills (auto-generated, do not edit) -->
@@ -92,8 +134,8 @@ npm install
   <!-- END team-ai-skills -->
   ```
 
-  รอบถัดไปแทนที่เฉพาะช่วงระหว่าง marker ถ้ายังไม่มี marker ค่อย append ต่อท้าย — แบบนี้รัน `npm install` กี่รอบไฟล์ก็ไม่บวม
-- [ ] ใช้ `INIT_CWD` แทนการถอย path 3 ชั้น
+  รอบถัดไปแทนที่เฉพาะช่วงระหว่าง marker ถ้ายังไม่มี marker ค่อย append ต่อท้าย — แบบเดียวกับที่ `settings.json` ทำอยู่แล้ว
+- [ ] `.cursorrules` ควร merge แทนการเขียนทับ เหมือนที่ `settings.json` ทำ
 - [ ] พิจารณา Cursor Project Rules (`.cursor/rules/*.mdc`) ซึ่งกำหนด scope ต่อ glob ได้ — **ต้องเช็คเวอร์ชัน Cursor ที่ทีมใช้ก่อน** ว่ารองรับหรือยัง ถ้าทำควรเขียนคู่กับ `.cursorrules` ไว้ก่อนเพื่อ backward compat
 
 ---
@@ -102,10 +144,14 @@ npm install
 
 ```
 team-ai-skills/
-├── install-rules.js          # postinstall script
-├── package.json
+├── install-rules.js              # postinstall script
+├── package.json                  # "files" คุมว่าอะไรถูก publish
 ├── rules/
-│   └── team-guidelines.md    # ← แก้กฎที่นี่ที่เดียว
-├── .gitignore                # กัน .npmrc หลุด
-└── .npmrc                    # (local only, gitignored) registry + token
+│   └── team-guidelines.md        # ← แก้กฎที่นี่ (→ .cursorrules)
+├── .claude/
+│   ├── settings.json             # ← hooks ที่จะแจก (tag: team-ai-skills:)
+│   └── skills/
+│       └── caveman/SKILL.md      # ← วางโฟลเดอร์ skill เพิ่มได้เลย
+├── .gitignore                    # กัน .npmrc หลุด
+└── .npmrc                        # (local only, gitignored) registry + token
 ```

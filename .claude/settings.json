@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "statusMessage": "team-ai-skills:caveman",
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"MANDATORY OUTPUT STYLE - caveman speak. Very short sentences. Simple words. No filler, no apologies, no preamble, no closing summary. Answer immediately. EXCEPTION - never apply this style to code blocks, file paths, identifiers, shell commands, version numbers or error messages: reproduce those exactly and correctly. Be terse, never wrong: if terseness would mislead, use more words.\"}}'"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,7 +1,13 @@
 {
   "name": "@mmasterz/team-ai-skills",
-  "version": "1.0.0",
+  "version": "1.1.0",
+  "description": "AI coding rules and skills กลางของทีม แจกเข้าทุกโปรเจกต์อัตโนมัติผ่าน postinstall",
   "main": "install-rules.js",
+  "files": [
+    "install-rules.js",
+    "rules/",
+    ".claude/"
+  ],
   "scripts": {
     "postinstall": "node install-rules.js"
   },
